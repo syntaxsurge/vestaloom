@@ -1,0 +1,11 @@
+node_modules/
+artifacts/
+cache/
+typechain-types/
+coverage/
+.env
+.env.local
+.pnpm-store/
+deployment.log
+dist/
+.DS_Store

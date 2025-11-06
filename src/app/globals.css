@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root,
+html,
+body {
+  height: 100%;
+}
+
+@layer base {
+  :root {
+    /* Skool-inspired light mode colors */
+    --background: 0 0% 97%;
+    --foreground: 0 0% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+
+    --primary: 48 100% 67%;
+    --primary-foreground: 0 0% 10%;
+
+    --secondary: 0 0% 90%;
+    --secondary-foreground: 0 0% 10%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 8%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 96%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Skool-inspired dark mode colors */
+    --background: 0 0% 10%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 14%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 14%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 48 100% 67%;
+    --primary-foreground: 0 0% 10%;
+
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 8%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 217 91% 60%;
+  }
+
+  .default-light,
+  .default-dark {
+    --ock-font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+    --ock-border-radius: var(--radius);
+    --ock-border-radius-inner: calc(var(--radius) - 4px);
+
+    --ock-bg-primary: hsl(var(--accent));
+    --ock-bg-primary-hover: hsl(var(--accent) / 0.9);
+    --ock-bg-primary-active: hsl(var(--accent) / 0.85);
+    --ock-bg-primary-washed: hsl(var(--accent) / 0.2);
+    --ock-bg-primary-disabled: hsl(var(--accent) / 0.4);
+
+    --ock-text-inverse: hsl(var(--accent-foreground));
+    --ock-text-primary: hsl(var(--foreground));
+    --ock-text-foreground: hsl(var(--foreground));
+    --ock-text-foreground-muted: hsl(var(--muted-foreground));
+
+    --ock-icon-color-inverse: hsl(var(--accent-foreground));
+    --ock-icon-color-primary: hsl(var(--accent));
+    --ock-icon-color-foreground: hsl(var(--foreground));
+
+    --ock-border-line-primary: hsl(var(--accent));
+    --ock-border-line-default: hsl(var(--border));
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

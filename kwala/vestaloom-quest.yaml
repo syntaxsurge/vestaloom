@@ -1,0 +1,58 @@
+name: vestaloom-quest-badge
+execution: sequential
+
+trigger:
+  TriggerChainID: 50312
+  TriggerSourceContract: ${VESTA_QUEST_ADDRESS}
+  TriggerSourceContractABI: |
+    [
+      {
+        "anonymous": false,
+        "inputs": [
+          { "indexed": true, "internalType": "address", "name": "player", "type": "address" },
+          { "indexed": true, "internalType": "uint256", "name": "questId", "type": "uint256" },
+          { "indexed": false, "internalType": "string", "name": "proofUri", "type": "string" }
+        ],
+        "name": "QuestCompleted",
+        "type": "event"
+      }
+    ]
+  TriggerEventName: QuestCompleted
+  TriggerEventFilter:
+    indexed:
+      player: "*"
+      questId: "*"
+
+actions:
+  - name: write-sds-progress
+    type: api
+    APIEndpoint: ${SDS_PROGRESS_ENDPOINT}
+    APIPayload:
+      player: "{{event.params.player}}"
+      questId: "{{event.params.questId}}"
+      proofUri: "{{event.params.proofUri}}"
+    RetriesUntilSuccess: 1
+    Metadata:
+      description: Persist quest completion inside Somnia Data Streams.
+
+  - name: mint-badge
+    type: call
+    ChainID: 50312
+    TargetContract: ${VESTA_BADGE_ADDRESS}
+    TargetFunction: mintBadge
+    TargetParams:
+      - "{{event.params.player}}"
+    RetriesUntilSuccess: 2
+    Metadata:
+      description: Mint the Vestaloom badge for the verified player.
+
+  # Uncomment to mirror achievements on an additional network.
+  # - name: mirror-credential
+  #   type: call
+  #   ChainID: 84532
+  #   TargetContract: ${MIRROR_CONTRACT_ADDRESS}
+  #   TargetFunction: mirrorCredential
+  #   TargetParams:
+  #     - "{{event.params.player}}"
+  #     - "{{event.params.questId}}"
+  #   RetriesUntilSuccess: 2
