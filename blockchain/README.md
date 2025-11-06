@@ -26,10 +26,9 @@ The private key should hold testnet STT for deployment. It is separate from the 
 ## Commands
 
 ```bash
-pnpm install
-pnpm hardhat compile
-pnpm hardhat run scripts/deploy.ts --network somnia
-pnpm hardhat verify --network somnia <deployed-address>
+pnpm --dir blockchain install
+pnpm contracts:compile
+pnpm contracts:deploy
 ```
 
 Deployment addresses are appended to `deployment.log` for later use in the frontend and Kwala workflow.

@@ -59,13 +59,16 @@ echo "SOMNIA_RPC_URL=https://dream-rpc.somnia.network" >> .env
 echo "SOMNIA_PRIVATE_KEY=<your testnet key>" >> .env
 echo "KWALA_MINTER_ADDRESS=<kwala signer>" >> .env # optional
 
-pnpm install
-pnpm hardhat run scripts/deploy.ts --network somnia
-pnpm hardhat verify --network somnia <VestaBadgeAddress>
-pnpm hardhat verify --network somnia <VestaQuestAddress>
+pnpm --dir blockchain install
+pnpm contracts:compile
+pnpm contracts:deploy
+# optional: pnpm --dir blockchain hardhat verify --network somnia <address>
 ```
 
-Deployment output is appended to `blockchain/deployment.log`. The Next.js app
+`pnpm contracts:deploy` runs `blockchain/scripts/deploy.ts`, which deploys the
+current Somnia surface: `VestaQuest` (QuestCompleted emitter) and `VestaBadge`
+(soulbound minter). Deployment output is appended to `blockchain/deployment.log`.
+The Next.js app
 consumes these addresses through the `.env.local` variables listed below.
 
 ### Contracts
@@ -170,7 +173,7 @@ every required value and where to fetch it.
 | `NEXT_PUBLIC_MARKETPLACE_CONTRACT_ADDRESS`         | Same as above (optional).                                                               | Legacy marketplace references.                                                                   |
 | `NEXT_PUBLIC_BADGE_CONTRACT_ADDRESS`               | Legacy badge contract (optional).                                                       | Only needed if you surface historical badges.                                                    |
 | `NEXT_PUBLIC_REVENUE_SPLIT_ROUTER_ADDRESS`         | Legacy revenue split router (optional).                                                 | Required only for the old marketplace flows.                                                     |
-| `NEXT_PUBLIC_VESTA_QUEST_ADDRESS`                  | Address emitted by `pnpm hardhat run scripts/deploy.ts --network somnia`.               | Used by `/somnia` and Kwala workflow.                                                            |
+| `NEXT_PUBLIC_VESTA_QUEST_ADDRESS`                  | Address emitted by `pnpm contracts:deploy`.                                             | Used by `/somnia` and Kwala workflow.                                                            |
 | `NEXT_PUBLIC_VESTA_BADGE_ADDRESS`                  | Same as above.                                                                          | Lets the UI read badge totals.                                                                   |
 | `NEXT_PUBLIC_SDS_PUBLISHER_ADDRESS`                | `0x…` address of the wallet that writes to SDS (the SDS signer).                        | Allows the feed hook to filter records.                                                          |
 | `NEXT_PUBLIC_SUBSCRIPTION_PRICE_USDC`              | Any USD price (string).                                                                 | Controls legacy pricing labels.                                                                  |
@@ -191,16 +194,11 @@ every required value and where to fetch it.
 
 ### Hardhat (`blockchain/.env`)
 
-| Key                                                                                               | Where to get it                                                                   | Purpose                                                                                |
-| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `SOMNIA_RPC_URL`                                                                                  | https://dream-rpc.somnia.network or your own endpoint.                            | RPC used for deployments.                                                              |
-| `SOMNIA_PRIVATE_KEY`                                                                              | Export from a funded Somnia testnet wallet (Metamask → Account details → Export). | Deployment signer for Vesta contracts.                                                 |
-| `KWALA_MINTER_ADDRESS` _(optional)_                                                               | EVM address that Kwala uses to sign transactions.                                 | When provided, `scripts/deploy.ts` automatically grants `MINTER_ROLE` on `VestaBadge`. |
-| `USDC_ADDRESS`                                                                                    | Somnia USDC token address.                                                        | Required if you interact with USDC-based contracts.                                    |
-| `MEMBERSHIP_CONTRACT_ADDRESS`, `BADGE_CONTRACT_ADDRESS`, `REGISTRAR_ADDRESS`                      | Optional legacy contract addresses if you keep the original suite.                | Allows Hardhat scripts to attach instead of redeploying.                               |
-| `MARKETPLACE_TREASURY_ADDRESS`, `MARKETPLACE_FEE_BPS`, `MARKETPLACE_MAX_LISTING_DURATION_SECONDS` | Treasury wallet and fee configuration.                                            | Only relevant for legacy marketplace flow.                                             |
-| `MEMBERSHIP_METADATA_URI`, `BADGE_METADATA_URI`                                                   | IPFS or HTTPS URIs.                                                               | Metadata configuration for legacy contracts.                                           |
-| `MEMBERSHIP_DURATION_SECONDS`, `MEMBERSHIP_TRANSFER_COOLDOWN_SECONDS`                             | Seconds.                                                                          | Default duration/cooldown for legacy memberships.                                      |
+| Key                          | Where to get it                                                                   | Purpose                                                                                |
+| ---------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `SOMNIA_RPC_URL`             | https://dream-rpc.somnia.network or your own endpoint.                            | RPC used for deployments.                                                              |
+| `SOMNIA_PRIVATE_KEY`         | Export from a funded Somnia testnet wallet (Metamask → Account details → Export). | Deployment signer for Vesta contracts.                                                 |
+| `KWALA_MINTER_ADDRESS` _(optional)_ | EVM address that Kwala uses to sign transactions.                                 | When provided, `scripts/deploy.ts` automatically grants `MINTER_ROLE` on `VestaBadge`. |
 
 > **Tip:** you can generate new Somnia wallets in Metamask by switching the
 > network to Shannon, then exporting the private key from Account Details. Fund

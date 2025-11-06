@@ -16,6 +16,8 @@
     "convex:deploy": "npx convex deploy -y",
     "convex:redeploy": "pnpm convex:deploy && pnpm convex:dev",
     "contracts:sync-abis": "tsx scripts/sync-abis.ts",
+    "contracts:compile": "pnpm --dir blockchain hardhat compile",
+    "contracts:deploy": "pnpm --dir blockchain hardhat run scripts/deploy.ts --network somnia",
     "sds:bootstrap": "tsx scripts/sds-bootstrap.ts",
     "bootstrap:sds": "tsx scripts/sds-bootstrap.ts"
   },
