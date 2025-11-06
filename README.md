@@ -100,23 +100,55 @@ Import the YAML in your Kwala workspace, supply the contract addresses, and moni
 
 ## Environment Variables
 
-Create `.env.local` in the project root with these keys:
+Create `.env.local` (or `.env`) in the project root. The table below explains every required value and where to fetch it.
 
-```env
-NEXT_PUBLIC_SOMNIA_CHAIN_ID=50312
-NEXT_PUBLIC_SOMNIA_RPC_URL=https://dream-rpc.somnia.network
-NEXT_PUBLIC_SOMNIA_EXPLORER_URL=https://shannon-explorer.somnia.network
-# Optional WebSocket endpoint for SDS subscriptions
-# NEXT_PUBLIC_SOMNIA_WS_RPC_URL=wss://dream-rpc.somnia.network
+### Frontend (`.env.local`)
 
-NEXT_PUBLIC_VESTA_QUEST_ADDRESS=<address from deployment.log>
-NEXT_PUBLIC_VESTA_BADGE_ADDRESS=<address from deployment.log>
-NEXT_PUBLIC_SDS_PUBLISHER_ADDRESS=<address that signs SDS writes>
+| Key | Where to get it | Purpose |
+| --- | --------------- | ------- |
+| `NEXT_PUBLIC_SOMNIA_CHAIN_ID` | Always `50312` for Shannon testnet. | Informs wagmi/viem which chain to target. |
+| `NEXT_PUBLIC_SOMNIA_RPC_URL` | https://dream-rpc.somnia.network (public) or your private endpoint. | RPC used by the client to read chain data. |
+| `NEXT_PUBLIC_SOMNIA_EXPLORER_URL` | https://shannon-explorer.somnia.network | Used for outbound explorer links. |
+| `NEXT_PUBLIC_SOMNIA_WS_RPC_URL` *(optional)* | WebSocket URL if you run a node with WS enabled, e.g. `wss://dream-rpc.somnia.network`. | Enables live SDS subscriptions; leave unset to fall back to polling. |
+| `NEXT_PUBLIC_USDC_CONTRACT_ADDRESS` | Somnia USDC address from docs or deployment. | Required if you use USDC-based pricing. |
+| `NEXT_PUBLIC_PLATFORM_TREASURY_ADDRESS` | Wallet that should receive marketplace fees. | Used in UI copy and join flows. |
+| `NEXT_PUBLIC_MEMBERSHIP_CONTRACT_ADDRESS` | Address logged by Hardhat when deploying legacy membership contracts (optional). | Supports legacy pages if you keep them. |
+| `NEXT_PUBLIC_REGISTRAR_CONTRACT_ADDRESS` | Same as above (optional). | Legacy registrar references. |
+| `NEXT_PUBLIC_MARKETPLACE_CONTRACT_ADDRESS` | Same as above (optional). | Legacy marketplace references. |
+| `NEXT_PUBLIC_BADGE_CONTRACT_ADDRESS` | Legacy badge contract (optional). | Only needed if you surface historical badges. |
+| `NEXT_PUBLIC_REVENUE_SPLIT_ROUTER_ADDRESS` | Legacy revenue split router (optional). | Required only for the old marketplace flows. |
+| `NEXT_PUBLIC_VESTA_QUEST_ADDRESS` | Address emitted by `pnpm hardhat run scripts/deploy.ts --network somnia`. | Used by `/somnia` and Kwala workflow. |
+| `NEXT_PUBLIC_VESTA_BADGE_ADDRESS` | Same as above. | Lets the UI read badge totals. |
+| `NEXT_PUBLIC_SDS_PUBLISHER_ADDRESS` | `0x…` address of the wallet that writes to SDS (the SDS signer). | Allows the feed hook to filter records. |
+| `NEXT_PUBLIC_SUBSCRIPTION_PRICE_USDC` | Any USD price (string). | Controls legacy pricing labels. |
+| `NEXT_PUBLIC_MEMBERSHIP_DURATION_SECONDS` | Seconds (default `2592000`). | Legacy membership duration. |
+| `NEXT_PUBLIC_MEMBERSHIP_TRANSFER_COOLDOWN_SECONDS` | Seconds (default `86400`). | Legacy cooldown display. |
+| `NEXT_PUBLIC_CONVEX_URL` | From `npx convex dev` output or Convex dashboard. | Required for Convex queries/mutations. |
 
-SDS_SIGNER_PRIVATE_KEY=<test wallet used exclusively for SDS writes>
-```
+### Server-side (`.env`)
 
-> The SDS signer is only required for server-side schema registration and data writes. It should **not** hold funds.
+| Key | Where to get it | Purpose |
+| --- | --------------- | ------- |
+| `SDS_SIGNER_PRIVATE_KEY` | Generate a new Somnia wallet (Metamask, Rabby, etc.), export its private key, **fund it with a tiny amount of STT**, and store the key here. | Used by SDS bootstrap and `/api/sds/progress` writes. Keep it out of version control. |
+
+### Hardhat (`blockchain/.env`)
+
+| Key | Where to get it | Purpose |
+| --- | --------------- | ------- |
+| `SOMNIA_RPC_URL` | https://dream-rpc.somnia.network or your own endpoint. | RPC used for deployments. |
+| `SOMNIA_PRIVATE_KEY` | Export from a funded Somnia testnet wallet (Metamask → Account details → Export). | Deployment signer for Vesta contracts. |
+| `USDC_ADDRESS` | Somnia USDC token address. | Required if you interact with USDC-based contracts. |
+| `MEMBERSHIP_CONTRACT_ADDRESS`, `BADGE_CONTRACT_ADDRESS`, `REGISTRAR_ADDRESS` | Optional legacy contract addresses if you keep the original suite. | Allows Hardhat scripts to attach instead of redeploying. |
+| `MARKETPLACE_TREASURY_ADDRESS`, `MARKETPLACE_FEE_BPS`, `MARKETPLACE_MAX_LISTING_DURATION_SECONDS` | Treasury wallet and fee configuration. | Only relevant for legacy marketplace flow. |
+| `MEMBERSHIP_METADATA_URI`, `BADGE_METADATA_URI` | IPFS or HTTPS URIs. | Metadata configuration for legacy contracts. |
+| `MEMBERSHIP_DURATION_SECONDS`, `MEMBERSHIP_TRANSFER_COOLDOWN_SECONDS` | Seconds. | Default duration/cooldown for legacy memberships. |
+
+> **Tip:** you can generate new Somnia wallets in Metamask by switching the network to Shannon, then exporting the private key from Account Details. Fund it via the Somnia faucet or team-provided STT allocations.
+
+Need STT or official addresses? Reference:
+- Faucet/Test tokens: https://docs.somnia.network/developer/how-to-guides/basics/get-testnet-tokens
+- Official contract registry: https://explorer.somnia.network (search “USDC” or relevant tokens)
+- Convex deployment URL: run `npx convex dev` and copy the printed deployment URL.
 
 ## Running the App
 
