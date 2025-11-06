@@ -4,18 +4,30 @@ import { privateKeyToAccount } from 'viem/accounts'
 
 import { somniaTestnet } from '@/lib/chains/somnia'
 
-const SOMNIA_HTTP_RPC =
-  process.env.NEXT_PUBLIC_SOMNIA_RPC_URL ?? 'https://dream-rpc.somnia.network'
+const DEFAULT_HTTP_RPC = 'https://dream-rpc.somnia.network'
 
-const SOMNIA_WS_RPC =
+const SERVER_HTTP_RPC =
+  process.env.RPC_URL ??
+  process.env.SOMNIA_RPC_URL ??
+  process.env.NEXT_PUBLIC_RPC_URL ??
+  process.env.NEXT_PUBLIC_SOMNIA_RPC_URL ??
+  DEFAULT_HTTP_RPC
+
+const PUBLIC_HTTP_RPC =
+  process.env.NEXT_PUBLIC_RPC_URL ??
+  process.env.NEXT_PUBLIC_SOMNIA_RPC_URL ??
+  SERVER_HTTP_RPC
+
+const PUBLIC_WS_RPC =
+  process.env.NEXT_PUBLIC_WS_RPC_URL ??
   process.env.NEXT_PUBLIC_SOMNIA_WS_RPC_URL ??
-  SOMNIA_HTTP_RPC.replace('https://', 'wss://').replace('http://', 'ws://')
+  PUBLIC_HTTP_RPC.replace('https://', 'wss://').replace('http://', 'ws://')
 
 function createWsClient() {
   try {
     return createPublicClient({
       chain: somniaTestnet,
-      transport: webSocket(SOMNIA_WS_RPC)
+      transport: webSocket(PUBLIC_WS_RPC)
     })
   } catch {
     return null
@@ -25,7 +37,7 @@ function createWsClient() {
 export function getPublicHttpClient() {
   return createPublicClient({
     chain: somniaTestnet,
-    transport: http(SOMNIA_HTTP_RPC)
+    transport: http(PUBLIC_HTTP_RPC)
   })
 }
 
@@ -34,15 +46,16 @@ export function getPublicWsClient() {
 }
 
 export function getWalletClient() {
-  const key = process.env.SDS_SIGNER_PRIVATE_KEY
+  const key = (process.env.PRIVATE_KEY ??
+    process.env.SDS_SIGNER_PRIVATE_KEY) as `0x${string}` | undefined
   if (!key) {
-    throw new Error('SDS_SIGNER_PRIVATE_KEY is required for write operations')
+    throw new Error('PRIVATE_KEY is required for write operations')
   }
 
   return createWalletClient({
     chain: somniaTestnet,
-    account: privateKeyToAccount(key as `0x${string}`),
-    transport: http(SOMNIA_HTTP_RPC)
+    account: privateKeyToAccount(key),
+    transport: http(SERVER_HTTP_RPC)
   })
 }
 

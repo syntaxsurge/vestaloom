@@ -11,12 +11,13 @@
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "format": "prettier --write .",
     "lint:all": "pnpm run lint:fix && pnpm run lint && pnpm run format",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "convex:dev": "node ./scripts/convex-dev.cjs",
     "convex:deploy": "npx convex deploy -y",
     "convex:redeploy": "pnpm convex:deploy && pnpm convex:dev",
     "contracts:sync-abis": "tsx scripts/sync-abis.ts",
-    "sds:bootstrap": "tsx scripts/sds-bootstrap.ts"
+    "sds:bootstrap": "tsx scripts/sds-bootstrap.ts",
+    "bootstrap:sds": "tsx scripts/sds-bootstrap.ts"
   },
   "dependencies": {
     "@blocknote/core": "^0.41.1",

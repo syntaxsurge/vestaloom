@@ -6,8 +6,8 @@ This Hardhat project is dedicated to the Somnia-specific contracts that power Ve
 
 | Contract      | File                                        | Description                                                                 |
 | ------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
-| `VestaQuest`  | `contracts/VestaQuest.sol`                  | Emits `QuestCompleted(address,uint256,string)` when a learner finishes a quest. |
-| `VestaBadge`  | `contracts/VestaBadge.sol`                  | Minimal ERC‑721 credential; ownership restricted to the deployer (Kwala runs minting). |
+| `VestaQuest`  | `contracts/VestaQuest.sol`                  | Emits `QuestCompleted(address,uint256,string)` and blocks duplicate submissions per player/quest. |
+| `VestaBadge`  | `contracts/VestaBadge.sol`                  | Soulbound ERC‑721 credential; `MINTER_ROLE` controls access and enforces one badge per quest. |
 
 Legacy contracts such as `MembershipPass1155` remain in the workspace but are not required for Somnia deployments.
 
@@ -18,6 +18,7 @@ Create `blockchain/.env` with:
 ```env
 SOMNIA_RPC_URL=https://dream-rpc.somnia.network
 SOMNIA_PRIVATE_KEY=0x....
+KWALA_MINTER_ADDRESS=0x.... # optional — auto-grants MINTER_ROLE on deploy
 ```
 
 The private key should hold testnet STT for deployment. It is separate from the SDS signer used by the Next.js app.

@@ -4,16 +4,16 @@ import { FormEvent, useMemo, useState } from 'react'
 
 import { formatDistanceToNow } from 'date-fns'
 import { ArrowRight, CheckCircle2, Loader2 } from 'lucide-react'
-import { useAccount, useReadContract, useWriteContract } from 'wagmi'
 import { toast } from 'sonner'
 import { zeroAddress } from 'viem'
+import { useAccount, useReadContract, useWriteContract } from 'wagmi'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { useQuestFeed } from '@/lib/streams/useQuestFeed'
 import { somniaTestnet } from '@/lib/chains/somnia'
+import { useQuestFeed } from '@/lib/streams/useQuestFeed'
 
 const VESTA_QUEST_ABI = [
   {
@@ -31,35 +31,42 @@ const VESTA_QUEST_ABI = [
 const VESTA_BADGE_ABI = [
   {
     inputs: [],
-    name: 'nextTokenId',
+    name: 'nextId',
     outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
     type: 'function'
   }
 ] as const
 
-const questAddress = (process.env.NEXT_PUBLIC_VESTA_QUEST_ADDRESS ?? zeroAddress) as `0x${string}`
-const badgeAddress = (process.env.NEXT_PUBLIC_VESTA_BADGE_ADDRESS ?? zeroAddress) as `0x${string}`
+const questAddress = (process.env.NEXT_PUBLIC_VESTA_QUEST_ADDRESS ??
+  zeroAddress) as `0x${string}`
+const badgeAddress = (process.env.NEXT_PUBLIC_VESTA_BADGE_ADDRESS ??
+  zeroAddress) as `0x${string}`
+const publisherAddress = process.env.NEXT_PUBLIC_SDS_PUBLISHER_ADDRESS
+  ? (process.env.NEXT_PUBLIC_SDS_PUBLISHER_ADDRESS as `0x${string}`)
+  : undefined
 
 export default function SomniaOpsPage() {
   const { address } = useAccount()
   const [questId, setQuestId] = useState(1)
   const [proofUri, setProofUri] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const { entries, error } = useQuestFeed()
+  const { rows, error } = useQuestFeed(publisherAddress)
 
   const { writeContractAsync } = useWriteContract()
   const { data: nextTokenId } = useReadContract({
     abi: VESTA_BADGE_ABI,
     address: badgeAddress,
-    functionName: 'nextTokenId',
+    functionName: 'nextId',
     query: { enabled: badgeAddress !== zeroAddress }
   })
 
   const badgeCount = useMemo(() => {
     try {
       if (!nextTokenId) return 0
-      return typeof nextTokenId === 'bigint' ? Number(nextTokenId) : Number.parseInt(String(nextTokenId), 10)
+      return typeof nextTokenId === 'bigint'
+        ? Number(nextTokenId)
+        : Number.parseInt(String(nextTokenId), 10)
     } catch {
       return 0
     }
@@ -103,7 +110,9 @@ export default function SomniaOpsPage() {
       setProofUri('')
     } catch (submitError) {
       const message =
-        submitError instanceof Error ? submitError.message : 'Something went wrong while completing the quest'
+        submitError instanceof Error
+          ? submitError.message
+          : 'Something went wrong while completing the quest'
       toast.error(message)
     } finally {
       setSubmitting(false)
@@ -116,25 +125,38 @@ export default function SomniaOpsPage() {
         <span className='inline-flex items-center gap-2 rounded-full border border-border bg-background/80 px-4 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground shadow-sm'>
           Somnia Shannon testnet • Chain ID {somniaTestnet.id}
         </span>
-        <h1 className='text-balance text-4xl font-semibold text-foreground sm:text-5xl'>Vestaloom Somnia Ops</h1>
+        <h1 className='text-balance text-4xl font-semibold text-foreground sm:text-5xl'>
+          Vestaloom Somnia Ops
+        </h1>
         <p className='max-w-3xl text-base text-muted-foreground'>
-          Complete quests, stream verified progress to Somnia Data Streams, and let Kwala automations mint the badge for
-          you. This module powers the Somnia Data Streams Mini Hackathon and the Build with Kwala Hacker House with a
-          single deployment.
+          Complete quests, stream verified progress to Somnia Data Streams, and
+          let Kwala automations mint the badge for you. This module powers the
+          Somnia Data Streams Mini Hackathon and the Build with Kwala Hacker
+          House with a single deployment.
         </p>
         <div className='grid gap-6 sm:grid-cols-3'>
-          <StatCard label='Quests completed (live)' value={entries.length.toString()} />
+          <StatCard
+            label='Quests completed (live)'
+            value={rows.length.toString()}
+          />
           <StatCard label='Badges minted' value={badgeCount.toString()} />
-          <StatCard label='SDS publisher' value={(process.env.NEXT_PUBLIC_SDS_PUBLISHER_ADDRESS ?? '').toString()} />
+          <StatCard
+            label='SDS publisher'
+            value={(publisherAddress ?? 'not set').toString()}
+          />
         </div>
       </section>
 
       <section className='grid gap-8 rounded-3xl border border-border/70 bg-background/80 p-8 shadow-lg lg:grid-cols-[1fr_1.1fr]'>
         <div className='space-y-6'>
-          <h2 className='text-2xl font-semibold text-foreground'>Complete a quest</h2>
+          <h2 className='text-2xl font-semibold text-foreground'>
+            Complete a quest
+          </h2>
           <p className='text-sm text-muted-foreground'>
-            Submit a quest and proof URI from your connected wallet. The transaction fires a `QuestCompleted` event on
-            Somnia which is mirrored into Somnia Data Streams and consumed by the Kwala workflow to mint badges.
+            Submit a quest and proof URI from your connected wallet. The
+            transaction fires a `QuestCompleted` event on Somnia which is
+            mirrored into Somnia Data Streams and consumed by the Kwala workflow
+            to mint badges.
           </p>
           <form className='space-y-5' onSubmit={handleSubmit}>
             <div className='space-y-2'>
@@ -144,7 +166,9 @@ export default function SomniaOpsPage() {
                 type='number'
                 min={1}
                 value={questId}
-                onChange={event => setQuestId(Number.parseInt(event.target.value, 10))}
+                onChange={event =>
+                  setQuestId(Number.parseInt(event.target.value, 10))
+                }
                 required
               />
             </div>
@@ -158,10 +182,18 @@ export default function SomniaOpsPage() {
                 placeholder='https://...'
               />
             </div>
-            <Button type='submit' size='lg' className='w-full sm:w-auto' disabled={submitting}>
+            <Button
+              type='submit'
+              size='lg'
+              className='w-full sm:w-auto'
+              disabled={submitting}
+            >
               {submitting ? (
                 <>
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' aria-hidden='true' />
+                  <Loader2
+                    className='mr-2 h-4 w-4 animate-spin'
+                    aria-hidden='true'
+                  />
                   Recording quest...
                 </>
               ) : (
@@ -175,10 +207,12 @@ export default function SomniaOpsPage() {
         </div>
 
         <div className='h-full rounded-3xl border border-border/70 bg-card/80 p-6 shadow-inner'>
-          <h3 className='text-xl font-semibold text-foreground'>Live quest feed</h3>
+          <h3 className='text-xl font-semibold text-foreground'>
+            Live quest feed
+          </h3>
           <p className='mt-1 text-xs text-muted-foreground'>
-            Updates are fetched from Somnia Data Streams every few seconds using the shared schema defined in
-            `src/lib/streams/schemas.ts`.
+            Updates are fetched from Somnia Data Streams every few seconds using
+            the shared schema defined in `src/lib/streams/schemas.ts`.
           </p>
           <div className='mt-6 space-y-4'>
             {error && (
@@ -186,13 +220,14 @@ export default function SomniaOpsPage() {
                 {error}
               </div>
             )}
-            {entries.length === 0 ? (
+            {rows.length === 0 ? (
               <div className='rounded-xl border border-border/60 bg-background/60 p-6 text-sm text-muted-foreground'>
-                No quest progress yet — complete your first quest to populate the stream.
+                No quest progress yet — complete your first quest to populate
+                the stream.
               </div>
             ) : (
               <ul className='space-y-3'>
-                {entries
+                {rows
                   .slice()
                   .reverse()
                   .map(entry => (
@@ -202,14 +237,23 @@ export default function SomniaOpsPage() {
                     >
                       <div className='flex items-center justify-between gap-3'>
                         <div className='flex items-center gap-2'>
-                          <CheckCircle2 className='h-4 w-4 text-primary' aria-hidden='true' />
-                          <span className='font-medium'>Quest {entry.questId.toString()}</span>
+                          <CheckCircle2
+                            className='h-4 w-4 text-primary'
+                            aria-hidden='true'
+                          />
+                          <span className='font-medium'>
+                            Quest {entry.questId.toString()}
+                          </span>
                         </div>
                         <span className='text-xs text-muted-foreground'>
-                          {formatDistanceToNow(entry.timestamp, { addSuffix: true })}
+                          {formatDistanceToNow(entry.timestamp * 1000, {
+                            addSuffix: true
+                          })}
                         </span>
                       </div>
-                      <p className='mt-2 text-xs break-words text-muted-foreground'>Player: {entry.player}</p>
+                      <p className='mt-2 break-words text-xs text-muted-foreground'>
+                        Player: {entry.player}
+                      </p>
                       {entry.proofUri && (
                         <a
                           href={entry.proofUri}
@@ -239,7 +283,9 @@ type StatCardProps = {
 function StatCard({ label, value }: StatCardProps) {
   return (
     <div className='rounded-2xl border border-border/70 bg-background/80 p-4 shadow-sm'>
-      <dt className='text-xs uppercase tracking-wide text-muted-foreground'>{label}</dt>
+      <dt className='text-xs uppercase tracking-wide text-muted-foreground'>
+        {label}
+      </dt>
       <dd className='mt-1 text-2xl font-semibold text-foreground'>{value}</dd>
     </div>
   )

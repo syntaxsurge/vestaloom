@@ -9,7 +9,7 @@ export const SOMNIA_CHAIN_ID = Number(
 ) as 50312
 
 export const SOMNIA_RPC_URL =
-  process.env.NEXT_PUBLIC_SOMNIA_RPC_URL ?? 'https://dream-rpc.somnia.network'
+  process.env.NEXT_PUBLIC_RPC_URL ?? process.env.NEXT_PUBLIC_SOMNIA_RPC_URL ?? 'https://dream-rpc.somnia.network'
 
 export const SOMNIA_EXPLORER_URL =
   process.env.NEXT_PUBLIC_SOMNIA_EXPLORER_URL ?? 'https://shannon-explorer.somnia.network'

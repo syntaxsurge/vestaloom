@@ -1,9 +1,22 @@
 import { SchemaEncoder, zeroBytes32 } from '@somnia-chain/streams'
-import { encodeAbiParameters, encodeEventTopics, parseAbiItem, toHex } from 'viem'
-
-import { BADGE_MINT_EVENT_ID, BADGE_MINT_SCHEMA, QUEST_PROGRESS_EVENT_ID, QUEST_PROGRESS_SCHEMA } from './schemas'
-import { getSdk, getPublicHttpClient } from './client'
+import {
+  type AbiEvent,
+  type AbiParameter,
+  encodeAbiParameters,
+  encodeEventTopics,
+  parseAbiItem,
+  toEventHash,
+  toHex
+} from 'viem'
 import { waitForTransactionReceipt } from 'viem/actions'
+
+import { getSdk, getPublicHttpClient } from './client'
+import {
+  BADGE_MINT_EVENT_ID,
+  BADGE_MINT_SCHEMA,
+  QUEST_PROGRESS_EVENT_ID,
+  QUEST_PROGRESS_SCHEMA
+} from './schemas'
 
 export async function ensureQuestSchemas() {
   const sdk = getSdk(false)
@@ -20,14 +33,22 @@ export async function ensureQuestSchemas() {
 
   if (!questRegistered) {
     const tx = await sdk.streams.registerDataSchemas([
-      { id: 'quest_progress', schema: QUEST_PROGRESS_SCHEMA, parentSchemaId: zeroBytes32 }
+      {
+        id: 'quest_progress',
+        schema: QUEST_PROGRESS_SCHEMA,
+        parentSchemaId: zeroBytes32
+      }
     ])
     if (tx) await waitForTransactionReceipt(getPublicHttpClient(), { hash: tx })
   }
 
   if (!badgeRegistered) {
     const tx = await sdk.streams.registerDataSchemas([
-      { id: 'badge_mint', schema: BADGE_MINT_SCHEMA, parentSchemaId: zeroBytes32 }
+      {
+        id: 'badge_mint',
+        schema: BADGE_MINT_SCHEMA,
+        parentSchemaId: zeroBytes32
+      }
     ])
     if (tx) await waitForTransactionReceipt(getPublicHttpClient(), { hash: tx })
   }
@@ -41,36 +62,44 @@ export async function ensureQuestSchemas() {
 }
 
 async function ensureEventSchema(sdk: ReturnType<typeof getSdk>) {
-  const questEvent = await sdk.streams.getEventSchemasById([QUEST_PROGRESS_EVENT_ID])
+  const questEvent = await sdk.streams.getEventSchemasById([
+    QUEST_PROGRESS_EVENT_ID
+  ])
   if (!questEvent || questEvent.length === 0) {
-    const questAbi = parseAbiItem('event QuestProgress(bytes32 indexed tag, address indexed player, uint256 questId)')
+    const questAbi = parseAbiItem(
+      'event QuestProgress(bytes32 indexed tag, address indexed player, uint256 questId)'
+    ) as AbiEvent
     await sdk.streams.registerEventSchemas(
       [QUEST_PROGRESS_EVENT_ID],
       [
         {
-          eventTopic: questAbi.signature,
+          eventTopic: toEventHash(questAbi),
           params: questAbi.inputs.map(input => ({
             name: input.name ?? '',
             paramType: input.type,
-            isIndexed: Boolean(input.indexed)
+            isIndexed: isIndexedParam(input)
           }))
         }
       ]
     )
   }
 
-  const badgeEvent = await sdk.streams.getEventSchemasById([BADGE_MINT_EVENT_ID])
+  const badgeEvent = await sdk.streams.getEventSchemasById([
+    BADGE_MINT_EVENT_ID
+  ])
   if (!badgeEvent || badgeEvent.length === 0) {
-    const badgeAbi = parseAbiItem('event BadgeMinted(address indexed player, uint256 indexed tokenId, uint256 questId)')
+    const badgeAbi = parseAbiItem(
+      'event BadgeMinted(address indexed player, uint256 indexed tokenId, uint256 questId)'
+    ) as AbiEvent
     await sdk.streams.registerEventSchemas(
       [BADGE_MINT_EVENT_ID],
       [
         {
-          eventTopic: badgeAbi.signature,
+          eventTopic: toEventHash(badgeAbi),
           params: badgeAbi.inputs.map(input => ({
             name: input.name ?? '',
             paramType: input.type,
-            isIndexed: Boolean(input.indexed)
+            isIndexed: isIndexedParam(input)
           }))
         }
       ]
@@ -79,9 +108,14 @@ async function ensureEventSchema(sdk: ReturnType<typeof getSdk>) {
 }
 
 export function buildQuestEventPayload(player: `0x${string}`, questId: bigint) {
-  const abiItem = parseAbiItem('event QuestProgress(bytes32 indexed tag, address indexed player, uint256 questId)')
+  const abiItem = parseAbiItem(
+    'event QuestProgress(bytes32 indexed tag, address indexed player, uint256 questId)'
+  ) as AbiEvent
   const tag = toHex(`quest:${questId}`, { size: 32 })
-  const topics = encodeEventTopics({ abi: [abiItem], args: { tag, player, questId } })
+  const topics = encodeEventTopics({
+    abi: [abiItem],
+    args: { tag, player, questId }
+  })
   const eventData = encodeAbiParameters([], [])
 
   return { tag, topics, eventData }
@@ -96,10 +130,18 @@ export function encodeQuestProgress(data: {
 }) {
   const encoder = new SchemaEncoder(QUEST_PROGRESS_SCHEMA)
   return encoder.encodeData([
-    { name: 'timestamp', value: BigInt(data.timestamp).toString(), type: 'uint64' },
+    {
+      name: 'timestamp',
+      value: BigInt(data.timestamp).toString(),
+      type: 'uint64'
+    },
     { name: 'player', value: data.player, type: 'address' },
     { name: 'questId', value: data.questId, type: 'uint256' },
     { name: 'status', value: data.status, type: 'string' },
     { name: 'proofUri', value: data.proofUri, type: 'string' }
   ])
+}
+
+function isIndexedParam(param: AbiParameter) {
+  return Boolean((param as { indexed?: boolean }).indexed)
 }

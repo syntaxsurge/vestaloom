@@ -1,58 +1,74 @@
-name: vestaloom-quest-badge
-execution: sequential
-
-trigger:
+Name: vestaloom_price_updated
+Trigger:
+  TriggerSourceContract: "0xd9132c1d762D432672493F640a63B758891B449e"
   TriggerChainID: 50312
-  TriggerSourceContract: ${VESTA_QUEST_ADDRESS}
+  TriggerEventName: "AnswerUpdated"
+  TriggerEventFilter: {}
   TriggerSourceContractABI: |
     [
       {
         "anonymous": false,
         "inputs": [
-          { "indexed": true, "internalType": "address", "name": "player", "type": "address" },
-          { "indexed": true, "internalType": "uint256", "name": "questId", "type": "uint256" },
-          { "indexed": false, "internalType": "string", "name": "proofUri", "type": "string" }
+          { "indexed": false, "internalType": "int256",  "name": "current",   "type": "int256"  },
+          { "indexed": false, "internalType": "uint256", "name": "roundId",   "type": "uint256" },
+          { "indexed": false, "internalType": "uint256", "name": "updatedAt", "type": "uint256" }
         ],
-        "name": "QuestCompleted",
+        "name": "AnswerUpdated",
         "type": "event"
       }
     ]
-  TriggerEventName: QuestCompleted
-  TriggerEventFilter:
-    indexed:
-      player: "*"
-      questId: "*"
 
-actions:
-  - name: write-sds-progress
-    type: api
-    APIEndpoint: ${SDS_PROGRESS_ENDPOINT}
-    APIPayload:
-      player: "{{event.params.player}}"
-      questId: "{{event.params.questId}}"
-      proofUri: "{{event.params.proofUri}}"
-    RetriesUntilSuccess: 1
-    Metadata:
-      description: Persist quest completion inside Somnia Data Streams.
+  RecurringSourceContract: "0xd9132c1d762D432672493F640a63B758891B449e"
+  RecurringChainID: 50312
+  RecurringEventName: "AnswerUpdated"
+  RecurringEventFilter: {}
+  RecurringSourceContractABI: |
+    [
+      {
+        "anonymous": false,
+        "inputs": [
+          { "indexed": false, "internalType": "int256",  "name": "current",   "type": "int256"  },
+          { "indexed": false, "internalType": "uint256", "name": "roundId",   "type": "uint256" },
+          { "indexed": false, "internalType": "uint256", "name": "updatedAt", "type": "uint256" }
+        ],
+        "name": "AnswerUpdated",
+        "type": "event"
+      }
+    ]
 
-  - name: mint-badge
-    type: call
+  ExecuteAfter: 1893456000        # 2030-01-01T00:00:00Z (future)
+  RepeatEvery: "0 0 0 * * *"      # 6-field CRON with seconds (midnight UTC daily)
+  ExpiresIn: 1896115200           # 2030-02-01T00:00:00Z (> ExecuteAfter)
+
+  ActionStatusNotificationPOSTURL: "https://vestaloom.vercel.app/api/kwala/action-status"
+  ActionStatusNotificationAPIKey: "kv_test_replace_with_real_key"
+  Meta: "vestaloom v1 – Somnia Testnet ETH/USD price watcher"
+
+Actions:
+  - Name: read_oracle_latest_round
+    Type: call
+    TargetContract: "0xd9132c1d762D432672493F640a63B758891B449e"
+    TargetFunction: "latestRoundData"
+    TargetParams: []
     ChainID: 50312
-    TargetContract: ${VESTA_BADGE_ADDRESS}
-    TargetFunction: mintBadge
-    TargetParams:
-      - "{{event.params.player}}"
-    RetriesUntilSuccess: 2
-    Metadata:
-      description: Mint the Vestaloom badge for the verified player.
+    Metadata: "Read latestRoundData from ETH/USD testnet feed"
+    RetriesUntilSuccess: 0
 
-  # Uncomment to mirror achievements on an additional network.
-  # - name: mirror-credential
-  #   type: call
-  #   ChainID: 84532
-  #   TargetContract: ${MIRROR_CONTRACT_ADDRESS}
-  #   TargetFunction: mirrorCredential
-  #   TargetParams:
-  #     - "{{event.params.player}}"
-  #     - "{{event.params.questId}}"
-  #   RetriesUntilSuccess: 2
+  - Name: notify_vestaloom_backend
+    Type: post
+    APIEndpoint: "https://vestaloom.vercel.app/api/kwala/price-updated"
+    APIPayload:
+      feed: "ETH-USD"
+      current: "${event.params.current}"
+      roundId: "${event.params.roundId}"
+      updatedAt: "${event.params.updatedAt}"
+      chainId: 50312
+    TargetContract: "0xd9132c1d762D432672493F640a63B758891B449e"
+    TargetFunction: "latestRoundData"
+    TargetParams: []
+    ChainID: 50312
+    Metadata: "Notify Vestaloom backend of price update"
+    RetriesUntilSuccess: 3
+
+Execution:
+  Mode: sequential
