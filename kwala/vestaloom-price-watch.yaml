@@ -1,0 +1,62 @@
+Name: vestaloom_price_watch
+Meta: Vestaloom – Somnia Testnet ETH/USD -> SDS
+Execution:
+  Mode: sequential
+
+Trigger:
+  TriggerSourceContract: "0xd9132c1d762D432672493F640a63B758891B449e"
+  TriggerChainID: 50312
+  TriggerEventName: "AnswerUpdated"
+  TriggerEventFilter: {}
+  TriggerSourceContractABI: |
+    [
+      {
+        "anonymous": false,
+        "inputs": [
+          { "indexed": false, "internalType": "int256",  "name": "current",   "type": "int256"  },
+          { "indexed": false, "internalType": "uint256", "name": "roundId",   "type": "uint256" },
+          { "indexed": false, "internalType": "uint256", "name": "updatedAt", "type": "uint256" }
+        ],
+        "name": "AnswerUpdated",
+        "type": "event"
+      }
+    ]
+  RecurringSourceContract: "0xd9132c1d762D432672493F640a63B758891B449e"
+  RecurringChainID: 50312
+  RecurringEventName: "AnswerUpdated"
+  RecurringEventFilter: {}
+  RecurringSourceContractABI: |
+    [
+      {
+        "anonymous": false,
+        "inputs": [
+          { "indexed": false, "internalType": "int256",  "name": "current",   "type": "int256"  },
+          { "indexed": false, "internalType": "uint256", "name": "roundId",   "type": "uint256" },
+          { "indexed": false, "internalType": "uint256", "name": "updatedAt", "type": "uint256" }
+        ],
+        "name": "AnswerUpdated",
+        "type": "event"
+      }
+    ]
+  RepeatEvery: "5m"
+  ExecuteAfter: 1893456000
+  ExpiresIn: 1896115200
+  ActionStatusNotificationPOSTURL: "https://vestaloom.vercel.app/api/kwala/action-status"
+  ActionStatusNotificationAPIKey: "kv_demo_key"
+
+Actions:
+  - Name: broadcast_price
+    Type: post
+    APIEndpoint: "https://vestaloom.vercel.app/api/kwala/price-updated"
+    APIPayload:
+      feed: "ETH-USD"
+      current: "${event.params.current}"
+      roundId: "${event.params.roundId}"
+      updatedAt: "${event.params.updatedAt}"
+      chainId: 50312
+      token: "kv_action_token_123"
+    ChainID: 50312
+    TargetContract: "0x0000000000000000000000000000000000000000"
+    TargetFunction: "noop"
+    TargetParams: []
+    RetriesUntilSuccess: 0

@@ -130,14 +130,15 @@ This registers the SDS schemas, event IDs, and logs the resulting identifiers.
 
 - YAML file:
   [`kwala/vestaloom-price-watch.yaml`](kwala/vestaloom-price-watch.yaml)
-- Trigger: Chainlink-style `AnswerUpdated(int256 current,uint256 roundId,uint256 updatedAt)`
-  on Somnia testnet (chain ID 50312). Set `PRICE_FEED_ADDRESS` to the price
-  oracle address (default in docs:
-  `0xd9132c1d762D432672493F640a63B758891B449e` for ETH/USD).
-- Recurring trigger polls every `5m` even if the on-chain event is missed.
+- Trigger: Chainlink-style
+  `AnswerUpdated(int256 current,uint256 roundId,uint256 updatedAt)` on Somnia
+  testnet (chain ID 50312). The YAML pins the deployed ETH/USD proxy at
+  `0xd9132c1d762D432672493F640a63B758891B449e` and mirrors it as a recurring
+  hook every five minutes.
 - Action: POST to
   `https://vestaloom.vercel.app/api/kwala/price-updated` with the decoded event
-  values plus a shared-secret token; the handler writes to the
+  values plus a shared-secret token (`kv_action_token_123`); the handler writes
+  to the
   `vestaloom_price` SDS schema and waits for transaction confirmation.
 - Status callback: set `KWALA_STATUS_ENDPOINT` to
   `https://vestaloom.vercel.app/api/kwala/action-status` so workflow execution
@@ -185,7 +186,7 @@ every required value and where to fetch it.
 | `PRIVATE_KEY`                       | Export from a dedicated Somnia wallet that will publish SDS data. Fund it with STT. | Signs SDS writes and schema registrations. Keep it strictly server-side.   |
 | `SENTRY_DSN` _(optional)_           | Project DSN from Sentry if you enable monitoring.                                   | Allows the app to report server exceptions.                                |
 | `KWALA_ACTION_API_KEY`              | Mirror `ActionStatusNotificationAPIKey` from the workflow YAML.                     | Authenticates `/api/kwala/action-status` callbacks.                        |
-| `KWALA_ACTION_BODY_TOKEN`           | Shared secret included in the workflow action payload.                              | Authenticates `/api/kwala/price-updated` POST requests.                    |
+| `KWALA_ACTION_BODY_TOKEN`           | Shared secret included in the workflow action payload (`kv_action_token_123`).      | Authenticates `/api/kwala/price-updated` POST requests.                    |
 | `SDS_SIGNER_PRIVATE_KEY` _(legacy)_ | Previous env name; still supported for backwards compatibility.                     | Prefer `PRIVATE_KEY` moving forward.                                       |
 
 ### Hardhat (`blockchain/.env`)
