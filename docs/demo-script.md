@@ -34,7 +34,16 @@ hackathons.
 3. Mention that the YAML lives in `kwala/vestaloom-quest.yaml`, mints via
    `mintBadge(player, questId)`, and requires no custom server.
 
-## 5. Wrap-up (30 seconds)
+## 5. Oracle Price Watch (45 seconds)
+
+1. Display `kwala/vestaloom-price-watch.yaml` in the repo and explain the shared
+   secret + status callback.
+2. Trigger an `AnswerUpdated` event (or replay a recorded run) and show the
+   `/api/kwala/price-updated` log plus the resulting SDS transaction hash.
+3. Mention that the price entries populate the `vestaloom_price` schema for
+   dashboards and analytics.
+
+## 6. Wrap-up (30 seconds)
 
 1. Summarize how a single deployment satisfies both hackathon tracks.
 2. Provide the GitHub repository URL and remind judges of the README sections

@@ -6,3 +6,6 @@ export const BADGE_MINT_SCHEMA =
 
 export const QUEST_PROGRESS_EVENT_ID = 'QuestProgress'
 export const BADGE_MINT_EVENT_ID = 'BadgeMint'
+
+export const PRICE_STREAM_SCHEMA =
+  'uint64 timestamp, string feed, int256 price, uint256 roundId, uint256 updatedAt, uint32 chainId, address reporter'

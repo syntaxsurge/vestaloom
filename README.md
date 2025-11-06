@@ -9,12 +9,13 @@ runs fully on the **Somnia Shannon testnet** and couples **Somnia Data Streams
 
 ## Live Endpoints
 
-| Surface              | URL / Entry Point                                          |
-| -------------------- | ---------------------------------------------------------- |
-| Next.js dApp         | `npm run dev` → http://localhost:3000                      |
-| SDS schema bootstrap | `pnpm run scripts/sds-bootstrap.ts` (see below)            |
-| Kwala workflow YAML  | [`kwala/vestaloom-quest.yaml`](kwala/vestaloom-quest.yaml) |
-| Smart contracts      | `blockchain/` Hardhat workspace                            |
+| Surface              | URL / Entry Point                                                  |
+| -------------------- | ------------------------------------------------------------------ |
+| Next.js dApp         | `npm run dev` → http://localhost:3000                              |
+| SDS schema bootstrap | `pnpm run scripts/sds-bootstrap.ts` (see below)                    |
+| Quest workflow YAML  | [`kwala/vestaloom-quest.yaml`](kwala/vestaloom-quest.yaml)         |
+| Price watch YAML     | [`kwala/vestaloom-price-watch.yaml`](kwala/vestaloom-price-watch.yaml) |
+| Smart contracts      | `blockchain/` Hardhat workspace                                    |
 
 ## Product Overview
 
@@ -29,6 +30,9 @@ runs fully on the **Somnia Shannon testnet** and couples **Somnia Data Streams
      notifications).
 4. **Any wallet** can subscribe to SDS and receive real-time quest progress
    updates without deploying custom infrastructure.
+5. **Price automation** listens to the Somnia ETH/USD feed (`AnswerUpdated`)
+   and posts readings to `/api/kwala/price-updated`, which persists the record
+   to the `vestaloom_price` SDS schema for dashboards and analytics.
 
 All actions are provably linked to user-signed intents and verifiable on-chain.
 
@@ -84,6 +88,9 @@ the new minimal pair above for hackathon flows.
     `uint64 timestamp, address player, uint256 tokenId, uint256 questId`
 - `src/app/api/sds/progress/route.ts` writes quest progress to SDS via
   `setAndEmitEvents`.
+- `src/app/api/kwala/price-updated/route.ts` ingests Kwala oracle callbacks,
+  enforces a shared-secret token, and records price data in the
+  `vestaloom_price` schema.
 - `src/lib/streams/useQuestFeed.ts` subscribes to SDS and powers the live “Quest
   Feed” widget at `/somnia`.
 - `scripts/sds-bootstrap.ts` guarantees schemas and event topics are registered
@@ -97,15 +104,18 @@ pnpm tsx scripts/sds-bootstrap.ts
 
 This registers the SDS schemas, event IDs, and logs the resulting identifiers.
 
-## Kwala Workflow
+## Kwala Workflows
+
+### Quest completion
 
 - YAML file: [`kwala/vestaloom-quest.yaml`](kwala/vestaloom-quest.yaml)
 - Trigger:
   `VestaQuest.QuestCompleted(address player, uint256 questId, string proofUri)`
   on Somnia (chain ID 50312).
 - Actions:
-  1. `write-sds-progress` — calls the Next.js API to persist the signed payload
-     to SDS.
+  1. `write-sds-progress` — calls
+     `https://vestaloom.vercel.app/api/sds/progress` (or your preview URL) to
+     persist the signed payload to SDS.
   2. `mint-badge` — invokes `VestaBadge.mintBadge(player, questId)` directly on
      Somnia so duplicates are rejected on-chain.
   3. The template includes a commented “mirror-credential” action for future
@@ -116,10 +126,27 @@ This registers the SDS schemas, event IDs, and logs the resulting identifiers.
   - `SDS_PROGRESS_ENDPOINT` (e.g.
     `https://vestaloom.vercel.app/api/sds/progress`)
 
-Import the YAML in your Kwala workspace, supply the contract addresses, and
-monitor execution from the Kwala dashboard. Because Kwala nodes use KMS-backed
-signing and verifiable logging, the automation satisfies the “backendless +
-traceable” criteria from the Build with Kwala track.
+### Oracle price watch
+
+- YAML file:
+  [`kwala/vestaloom-price-watch.yaml`](kwala/vestaloom-price-watch.yaml)
+- Trigger: Chainlink-style `AnswerUpdated(int256 current,uint256 roundId,uint256 updatedAt)`
+  on Somnia testnet (chain ID 50312). Set `PRICE_FEED_ADDRESS` to the price
+  oracle address (default in docs:
+  `0xd9132c1d762D432672493F640a63B758891B449e` for ETH/USD).
+- Recurring trigger polls every `5m` even if the on-chain event is missed.
+- Action: POST to
+  `https://vestaloom.vercel.app/api/kwala/price-updated` with the decoded event
+  values plus a shared-secret token; the handler writes to the
+  `vestaloom_price` SDS schema and waits for transaction confirmation.
+- Status callback: set `KWALA_STATUS_ENDPOINT` to
+  `https://vestaloom.vercel.app/api/kwala/action-status` so workflow execution
+  logs are captured server-side.
+
+Import the YAML files in your Kwala workspace, supply the variables, and monitor
+execution from the Kwala dashboard. Because Kwala nodes use KMS-backed signing
+and verifiable logging, the automation satisfies the “backendless + traceable”
+criteria from the Build with Kwala track.
 
 ## Environment Variables
 
@@ -157,6 +184,8 @@ every required value and where to fetch it.
 | `RPC_URL`                           | https://dream-rpc.somnia.network or your hosted endpoint.                           | Used by server utilities (SDS writes, bootstrap scripts, Kwala callbacks). |
 | `PRIVATE_KEY`                       | Export from a dedicated Somnia wallet that will publish SDS data. Fund it with STT. | Signs SDS writes and schema registrations. Keep it strictly server-side.   |
 | `SENTRY_DSN` _(optional)_           | Project DSN from Sentry if you enable monitoring.                                   | Allows the app to report server exceptions.                                |
+| `KWALA_ACTION_API_KEY`              | Mirror `ActionStatusNotificationAPIKey` from the workflow YAML.                     | Authenticates `/api/kwala/action-status` callbacks.                        |
+| `KWALA_ACTION_BODY_TOKEN`           | Shared secret included in the workflow action payload.                              | Authenticates `/api/kwala/price-updated` POST requests.                    |
 | `SDS_SIGNER_PRIVATE_KEY` _(legacy)_ | Previous env name; still supported for backwards compatibility.                     | Prefer `PRIVATE_KEY` moving forward.                                       |
 
 ### Hardhat (`blockchain/.env`)

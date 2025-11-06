@@ -14,6 +14,7 @@ import { getSdk, getPublicHttpClient } from './client'
 import {
   BADGE_MINT_EVENT_ID,
   BADGE_MINT_SCHEMA,
+  PRICE_STREAM_SCHEMA,
   QUEST_PROGRESS_EVENT_ID,
   QUEST_PROGRESS_SCHEMA
 } from './schemas'
@@ -59,6 +60,31 @@ export async function ensureQuestSchemas() {
     questSchemaId,
     badgeSchemaId
   }
+}
+
+export async function ensurePriceSchema() {
+  const sdk = getSdk(false)
+  const schemaId = await sdk.streams.computeSchemaId(PRICE_STREAM_SCHEMA)
+  const registered = await sdk.streams.isDataSchemaRegistered(schemaId)
+
+  if (!registered) {
+    const tx = await sdk.streams.registerDataSchemas(
+      [
+        {
+          id: 'vestaloom_price',
+          schema: PRICE_STREAM_SCHEMA,
+          parentSchemaId: zeroBytes32
+        }
+      ],
+      true
+    )
+
+    if (tx) {
+      await waitForTransactionReceipt(getPublicHttpClient(), { hash: tx })
+    }
+  }
+
+  return schemaId
 }
 
 async function ensureEventSchema(sdk: ReturnType<typeof getSdk>) {
@@ -144,4 +170,25 @@ export function encodeQuestProgress(data: {
 
 function isIndexedParam(param: AbiParameter) {
   return Boolean((param as { indexed?: boolean }).indexed)
+}
+
+export function encodePriceUpdate(data: {
+  timestamp: bigint
+  feed: string
+  price: bigint
+  roundId: bigint
+  updatedAt: bigint
+  chainId: number
+  reporter: `0x${string}`
+}) {
+  const encoder = new SchemaEncoder(PRICE_STREAM_SCHEMA)
+  return encoder.encodeData([
+    { name: 'timestamp', value: data.timestamp.toString(), type: 'uint64' },
+    { name: 'feed', value: data.feed, type: 'string' },
+    { name: 'price', value: data.price.toString(), type: 'int256' },
+    { name: 'roundId', value: data.roundId.toString(), type: 'uint256' },
+    { name: 'updatedAt', value: data.updatedAt.toString(), type: 'uint256' },
+    { name: 'chainId', value: BigInt(data.chainId).toString(), type: 'uint32' },
+    { name: 'reporter', value: data.reporter, type: 'address' }
+  ])
 }
